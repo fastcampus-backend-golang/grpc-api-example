@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package stock;
+
+option go_package = "github.com/madeindra/stock-grpc/proto";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+
+service StockService {
+  // Unary API: Get list of available stock codes
+  rpc ListStocks (google.protobuf.Empty) returns (StockCodes);
+
+  // Client Streaming: Enable/disable stock availability
+  rpc ToggleStocks (stream StockSubscription) returns (StockSubscription);
+
+  // Server Streaming: Get list of currently subscribed stocks
+  rpc ListSubscriptions (google.protobuf.Empty) returns (StockSubscription);
+
+  // Bidirectional Streaming: Live stock price subscription
+  rpc LiveStock (stream StockSubscription) returns (stream StockPrices);
+}
+
+
+message StockCodes {
+  repeated string stock_code = 1;
+}
+
+message StockSubscription {
+    map<string, bool> subscription = 1;
+}
+
+message StockPrices {
+    map<string, StockPrice> stock_prices = 1;
+}
+
+message StockPrice {
+    int64 price = 1;
+    google.protobuf.Timestamp timestamp = 2;  
+}
+
