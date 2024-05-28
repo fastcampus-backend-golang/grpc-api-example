@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package stock;
 
-option go_package = "github.com/madeindra/stock-grpc/proto";
+option go_package = "./proto";
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
