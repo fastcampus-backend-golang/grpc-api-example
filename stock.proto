@@ -27,7 +27,7 @@ message StockCode {
 }
 
 message StockCodes {
-  repeated string stock_code = 1;
+  repeated string stock_codes = 1;
 }
 
 message StockSubscription {
