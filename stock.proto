@@ -13,22 +13,26 @@ service StockService {
   rpc ListStocks (google.protobuf.Empty) returns (StockCodes);
 
   // Client Streaming: Enable/disable stock availability
-  rpc ToggleStocks (stream StockSubscription) returns (StockSubscription);
+  rpc ToggleStocks (stream StockSubscription) returns (StockCodes);
 
   // Server Streaming: Get list of currently subscribed stocks
-  rpc ListSubscriptions (google.protobuf.Empty) returns (StockSubscription);
+  rpc ListSubscriptions (google.protobuf.Empty) returns (stream StockCode);
 
   // Bidirectional Streaming: Live stock price subscription
   rpc LiveStock (stream StockSubscription) returns (stream StockPrices);
 }
 
+message StockCode {
+  string stock_code = 1;
+}
 
 message StockCodes {
   repeated string stock_code = 1;
 }
 
 message StockSubscription {
-    map<string, bool> subscription = 1;
+  string stock_code = 1;
+  bool is_enabled = 2;
 }
 
 message StockPrices {

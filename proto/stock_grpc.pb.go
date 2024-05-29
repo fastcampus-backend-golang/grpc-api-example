@@ -28,7 +28,7 @@ type StockServiceClient interface {
 	// Client Streaming: Enable/disable stock availability
 	ToggleStocks(ctx context.Context, opts ...grpc.CallOption) (StockService_ToggleStocksClient, error)
 	// Server Streaming: Get list of currently subscribed stocks
-	ListSubscriptions(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*StockSubscription, error)
+	ListSubscriptions(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (StockService_ListSubscriptionsClient, error)
 	// Bidirectional Streaming: Live stock price subscription
 	LiveStock(ctx context.Context, opts ...grpc.CallOption) (StockService_LiveStockClient, error)
 }
@@ -61,7 +61,7 @@ func (c *stockServiceClient) ToggleStocks(ctx context.Context, opts ...grpc.Call
 
 type StockService_ToggleStocksClient interface {
 	Send(*StockSubscription) error
-	CloseAndRecv() (*StockSubscription, error)
+	CloseAndRecv() (*StockCodes, error)
 	grpc.ClientStream
 }
 
@@ -73,28 +73,51 @@ func (x *stockServiceToggleStocksClient) Send(m *StockSubscription) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *stockServiceToggleStocksClient) CloseAndRecv() (*StockSubscription, error) {
+func (x *stockServiceToggleStocksClient) CloseAndRecv() (*StockCodes, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
-	m := new(StockSubscription)
+	m := new(StockCodes)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (c *stockServiceClient) ListSubscriptions(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*StockSubscription, error) {
-	out := new(StockSubscription)
-	err := c.cc.Invoke(ctx, "/stock.StockService/ListSubscriptions", in, out, opts...)
+func (c *stockServiceClient) ListSubscriptions(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (StockService_ListSubscriptionsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &StockService_ServiceDesc.Streams[1], "/stock.StockService/ListSubscriptions", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &stockServiceListSubscriptionsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type StockService_ListSubscriptionsClient interface {
+	Recv() (*StockCode, error)
+	grpc.ClientStream
+}
+
+type stockServiceListSubscriptionsClient struct {
+	grpc.ClientStream
+}
+
+func (x *stockServiceListSubscriptionsClient) Recv() (*StockCode, error) {
+	m := new(StockCode)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *stockServiceClient) LiveStock(ctx context.Context, opts ...grpc.CallOption) (StockService_LiveStockClient, error) {
-	stream, err := c.cc.NewStream(ctx, &StockService_ServiceDesc.Streams[1], "/stock.StockService/LiveStock", opts...)
+	stream, err := c.cc.NewStream(ctx, &StockService_ServiceDesc.Streams[2], "/stock.StockService/LiveStock", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +156,7 @@ type StockServiceServer interface {
 	// Client Streaming: Enable/disable stock availability
 	ToggleStocks(StockService_ToggleStocksServer) error
 	// Server Streaming: Get list of currently subscribed stocks
-	ListSubscriptions(context.Context, *emptypb.Empty) (*StockSubscription, error)
+	ListSubscriptions(*emptypb.Empty, StockService_ListSubscriptionsServer) error
 	// Bidirectional Streaming: Live stock price subscription
 	LiveStock(StockService_LiveStockServer) error
 	mustEmbedUnimplementedStockServiceServer()
@@ -149,8 +172,8 @@ func (UnimplementedStockServiceServer) ListStocks(context.Context, *emptypb.Empt
 func (UnimplementedStockServiceServer) ToggleStocks(StockService_ToggleStocksServer) error {
 	return status.Errorf(codes.Unimplemented, "method ToggleStocks not implemented")
 }
-func (UnimplementedStockServiceServer) ListSubscriptions(context.Context, *emptypb.Empty) (*StockSubscription, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListSubscriptions not implemented")
+func (UnimplementedStockServiceServer) ListSubscriptions(*emptypb.Empty, StockService_ListSubscriptionsServer) error {
+	return status.Errorf(codes.Unimplemented, "method ListSubscriptions not implemented")
 }
 func (UnimplementedStockServiceServer) LiveStock(StockService_LiveStockServer) error {
 	return status.Errorf(codes.Unimplemented, "method LiveStock not implemented")
@@ -191,7 +214,7 @@ func _StockService_ToggleStocks_Handler(srv interface{}, stream grpc.ServerStrea
 }
 
 type StockService_ToggleStocksServer interface {
-	SendAndClose(*StockSubscription) error
+	SendAndClose(*StockCodes) error
 	Recv() (*StockSubscription, error)
 	grpc.ServerStream
 }
@@ -200,7 +223,7 @@ type stockServiceToggleStocksServer struct {
 	grpc.ServerStream
 }
 
-func (x *stockServiceToggleStocksServer) SendAndClose(m *StockSubscription) error {
+func (x *stockServiceToggleStocksServer) SendAndClose(m *StockCodes) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -212,22 +235,25 @@ func (x *stockServiceToggleStocksServer) Recv() (*StockSubscription, error) {
 	return m, nil
 }
 
-func _StockService_ListSubscriptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
-	if err := dec(in); err != nil {
-		return nil, err
+func _StockService_ListSubscriptions_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(emptypb.Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(StockServiceServer).ListSubscriptions(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/stock.StockService/ListSubscriptions",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StockServiceServer).ListSubscriptions(ctx, req.(*emptypb.Empty))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(StockServiceServer).ListSubscriptions(m, &stockServiceListSubscriptionsServer{stream})
+}
+
+type StockService_ListSubscriptionsServer interface {
+	Send(*StockCode) error
+	grpc.ServerStream
+}
+
+type stockServiceListSubscriptionsServer struct {
+	grpc.ServerStream
+}
+
+func (x *stockServiceListSubscriptionsServer) Send(m *StockCode) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 func _StockService_LiveStock_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -267,16 +293,17 @@ var StockService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "ListStocks",
 			Handler:    _StockService_ListStocks_Handler,
 		},
-		{
-			MethodName: "ListSubscriptions",
-			Handler:    _StockService_ListSubscriptions_Handler,
-		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "ToggleStocks",
 			Handler:       _StockService_ToggleStocks_Handler,
 			ClientStreams: true,
+		},
+		{
+			StreamName:    "ListSubscriptions",
+			Handler:       _StockService_ListSubscriptions_Handler,
+			ServerStreams: true,
 		},
 		{
 			StreamName:    "LiveStock",
