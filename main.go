@@ -1,19 +1,15 @@
 package main
 
 import (
-	"sync"
 	"time"
 
 	"github.com/madeindra/stock-grpc/data"
 )
 
 func main() {
-	var mtx sync.Mutex
-
-	data.InitUpdateStocks(&mtx)
 	time.Sleep(3 * time.Second)
-	data.ToggleStock("AAPL", false, &mtx)
+	data.ToggleStock("AAPL", false)
 	time.Sleep(3 * time.Second)
-	data.ToggleStock("AAPL", true, &mtx)
+	data.ToggleStock("AAPL", true)
 	time.Sleep(6 * time.Second)
 }

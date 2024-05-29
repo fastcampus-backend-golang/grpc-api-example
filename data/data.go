@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+var mtx sync.Mutex
+
 // stockConfigs is a map that contains the stock code as the value whether the stock is enabled or not
 var stockConfigs = map[string]bool{
 	"AAPL": true,
@@ -27,20 +29,20 @@ type StockPrice struct {
 	Timestamp time.Time
 }
 
-// InitUpdateStocks is a function that initializes the stock update for the first time
-func InitUpdateStocks(mtx *sync.Mutex) {
+// init is a function that initializes the stock update for the first time
+func init() {
 	for code, isEnabled := range stockConfigs {
 		if !isEnabled {
 			continue
 		}
 
 		log.Printf("Stock %s is enabled", code)
-		go updateStock(code, mtx)
+		go updateStock(code)
 	}
 }
 
 // ToggleStock is a function that toggles the stock to be enabled or disabled
-func ToggleStock(code string, isEnabled bool, mtx *sync.Mutex) {
+func ToggleStock(code string, isEnabled bool) {
 	// lock the mutex
 	mtx.Lock()
 
@@ -60,7 +62,7 @@ func ToggleStock(code string, isEnabled bool, mtx *sync.Mutex) {
 		mtx.Unlock()
 
 		// trigger the updateStock
-		go updateStock(code, mtx)
+		go updateStock(code)
 
 		return
 	}
@@ -73,7 +75,7 @@ func ToggleStock(code string, isEnabled bool, mtx *sync.Mutex) {
 }
 
 // updateStock is a function that updates the stock price every second
-func updateStock(code string, mtx *sync.Mutex) {
+func updateStock(code string) {
 	for {
 		// lock the mutex
 		mtx.Lock()
