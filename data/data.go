@@ -142,3 +142,8 @@ func randomizePrice(price int64) int64 {
 	// if operation is 1, subtract the amount from the price
 	return price - amount
 }
+
+// GetStockConfig is a function to return the current configuration of the stock
+func GetStockConfig() map[string]bool {
+	return stockConfigs
+}
