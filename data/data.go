@@ -147,3 +147,7 @@ func randomizePrice(price int64) int64 {
 func GetStockConfig() map[string]bool {
 	return stockConfigs
 }
+
+func GetStockPrice(code string) []StockPrice {
+	return stockPrices[code]
+}
