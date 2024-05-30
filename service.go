@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"io"
+	"time"
 
 	"github.com/madeindra/stock-grpc/data"
 	pb "github.com/madeindra/stock-grpc/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type stockService struct {
@@ -86,5 +88,54 @@ func (s *stockService) ListSubscriptions(_ *emptypb.Empty, stream pb.StockServic
 }
 
 func (s *stockService) LiveStock(stream pb.StockService_LiveStockServer) error {
-	return nil
+	// trigger to continously receive request to toggle stock
+	go func(stream pb.StockService_LiveStockServer) {
+		for {
+			req, err := stream.Recv()
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			if err != nil {
+				return
+			}
+
+			code := req.StockCode
+			isEnabled := req.IsEnabled
+
+			data.ToggleStock(code, isEnabled)
+		}
+	}(stream)
+
+	// trigger to continously send latest price of all enabled stocks
+	for {
+		select {
+		case <-stream.Context().Done():
+			return nil
+		default:
+			// pause every second
+			time.Sleep(1 * time.Second)
+
+			configs := data.GetStockConfig()
+
+			for code, isEnabled := range configs {
+				if isEnabled {
+					history := data.GetStockPrice(code)
+					if len(history) == 0 {
+						continue
+					}
+
+					latestPrice := history[len(history)-1]
+
+					stream.Send(&pb.StockPrices{
+						StockPrices: map[string]*pb.StockPrice{
+							code: {
+								Price:     latestPrice.Price,
+								Timestamp: timestamppb.New(latestPrice.Timestamp),
+							},
+						},
+					})
+				}
+			}
+		}
+	}
 }
