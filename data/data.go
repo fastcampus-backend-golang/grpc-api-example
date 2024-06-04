@@ -9,7 +9,7 @@ import (
 
 var mtx sync.Mutex
 
-// stockConfigs is a map that contains the stock code as the value whether the stock is enabled or not
+// stockConfigs adalah map yang berisi kode saham sebagai kunci dan nilai boolean yang menunjukkan apakah saham tersebut diaktifkan atau tidak
 var stockConfigs = map[string]bool{
 	"AAPL": true,
 	"AMZN": true,
@@ -19,131 +19,131 @@ var stockConfigs = map[string]bool{
 	"NFLX": true,
 }
 
-// stockPrices is a map that contains the price history of the stock
+// stockPrices adalah map yang berisi riwayat harga saham
 var stockPrices = map[string][]StockPrice{}
 
-// StockPrice is a struct that contains the stock code, price, and timestamp
+// StockPrice adalah struct yang berisi kode saham, harga, dan timestamp
 type StockPrice struct {
 	Code      string
 	Price     int64
 	Timestamp time.Time
 }
 
-// init is a function that initializes the stock update for the first time
+// init adalah fungsi yang menginisialisasi pembaruan saham untuk pertama kalinya
 func init() {
 	for code, isEnabled := range stockConfigs {
 		if !isEnabled {
 			continue
 		}
 
-		log.Printf("Stock %s is enabled", code)
+		log.Printf("Saham %s diaktifkan", code)
 		go updateStock(code)
 	}
 }
 
-// ToggleStock is a function that toggles the stock to be enabled or disabled
+// ToggleStock adalah fungsi yang mengaktifkan atau menonaktifkan saham
 func ToggleStock(code string, isEnabled bool) {
-	// lock the mutex
+	// kunci mutex
 	mtx.Lock()
 
-	// check if the stock is already enabled or disabled
+	// periksa apakah saham sudah diaktifkan atau dinonaktifkan
 	if isEnabled == stockConfigs[code] {
 		mtx.Unlock()
 		return
 	}
 
-	log.Printf("Toggling %s to %t", code, isEnabled)
+	log.Printf("Mengubah status %s menjadi %t", code, isEnabled)
 
-	// if the stock is not enabled and the stock is toggled to enable, trigger the updateStock
+	// jika saham belum diaktifkan dan diubah menjadi diaktifkan, trigger updateStock
 	if !stockConfigs[code] && isEnabled {
 		stockConfigs[code] = true
 
-		// unlock the mutex
+		// buka kunci mutex
 		mtx.Unlock()
 
-		// trigger the updateStock
+		// trigger updateStock
 		go updateStock(code)
 
 		return
 	}
 
-	// if the stock is enabled and the stock is toggled to disable, set the stock to be disabled
+	// jika saham sudah diaktifkan dan diubah menjadi dinonaktifkan, set saham menjadi dinonaktifkan
 	stockConfigs[code] = false
 
-	// unlock the mutex
+	// buka kunci mutex
 	mtx.Unlock()
 }
 
-// updateStock is a function that updates the stock price every second
+// updateStock adalah fungsi yang memperbarui harga saham setiap detik
 func updateStock(code string) {
 	for {
-		// lock the mutex
+		// kunci mutex
 		mtx.Lock()
 
-		// if the stock is disabled, break the loop
+		// jika saham dinonaktifkan, hentikan perulangan
 		if !stockConfigs[code] {
-			// unlock the mutex
+			// buka kunci mutex
 			mtx.Unlock()
 
 			break
 		}
 
-		// sleep for 1 second to simulate the update
+		// tidur selama 1 detik untuk mensimulasikan pembaruan
 		time.Sleep(1 * time.Second)
 
-		// check if the stock exists
+		// periksa apakah saham ada
 		current, exists := stockPrices[code]
 		if !exists {
-			// if the stock does not exist, add the stock with the initial price
-			initialPrice := 10000
-			initialTimestamp := time.Now()
+			// jika saham tidak ada, tambahkan saham dengan harga awal
+			hargaAwal := 10000
+			waktuAwal := time.Now()
 
-			stockPrices[code] = []StockPrice{{Code: code, Price: int64(initialPrice), Timestamp: initialTimestamp}}
+			stockPrices[code] = []StockPrice{{Code: code, Price: int64(hargaAwal), Timestamp: waktuAwal}}
 
-			log.Printf("Stock %s first time added with price %d", code, initialPrice)
+			log.Printf("Saham %s ditambahkan untuk pertama kali dengan harga %d", code, hargaAwal)
 
-			// unlock the mutex
+			// buka kunci mutex
 			mtx.Unlock()
 
 			continue
 		}
 
-		// if the stock exists, get the last price and randomize the next price
-		lastItem := current[len(stockPrices[code])-1]
-		price := randomizePrice(lastItem.Price)
+		// jika saham ada, dapatkan harga terakhir dan acak harga berikutnya
+		itemTerakhir := current[len(stockPrices[code])-1]
+		harga := randomizePrice(itemTerakhir.Price)
 
-		// append the new price to the stock
+		// tambahkan harga baru ke saham
 		stockPrices[code] = append(stockPrices[code], StockPrice{
 			Code:      code,
-			Price:     price,
+			Price:     harga,
 			Timestamp: time.Now(),
 		})
 
-		log.Printf("Stock %s added with price %d", code, price)
+		log.Printf("Saham %s ditambahkan dengan harga %d", code, harga)
 
-		// unlock the mutex
+		// buka kunci mutex
 		mtx.Unlock()
 	}
 }
 
-// randomizePrice is a function that randomizes the price of the stock
-func randomizePrice(price int64) int64 {
-	// determine to add or subtract
-	operation := rand.Intn(2)
+// randomizePrice adalah fungsi yang mengacak harga saham
+func randomizePrice(harga int64) int64 {
+	// tentukan apakah akan ditambahkan atau dikurangkan
+	operasi := rand.Intn(2)
 
-	// determine the amount to add or subtract
-	amount := rand.Int63n(100)
+	// tentukan jumlah yang akan ditambahkan atau dikurangkan
+	jumlah := rand.Int63n(100)
 
-	// if operation is 0, add the amount to the price
-	if operation == 0 {
-		return price + amount
+	// jika operasi adalah 0, tambahkan jumlah ke harga
+	if operasi == 0 {
+		return harga + jumlah
 	}
 
-	// if operation is 1, subtract the amount from the price
-	return price - amount
+	// jika operasi adalah 1, kurangkan jumlah dari harga
+	return harga - jumlah
 }
 
-// GetStockConfig is a function to return the current configuration of the stock
+// GetStockConfig adalah fungsi untuk mengembalikan konfigurasi saham saat ini
 func GetStockConfig() map[string]bool {
 	return stockConfigs
 }

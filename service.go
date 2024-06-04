@@ -19,7 +19,7 @@ type stockService struct {
 func (s *stockService) ListStocks(ctx context.Context, _ *emptypb.Empty) (*pb.StockCodes, error) {
 	configs := data.GetStockConfig()
 
-	// get all stock codes
+	// ambil semua kode saham
 	codes := []string{}
 	for code := range configs {
 		codes = append(codes, code)
@@ -50,15 +50,15 @@ func (s *stockService) ToggleStocks(stream pb.StockService_ToggleStocksServer) e
 		toggles[code] = isEnabled
 	}
 
-	// bulk toggle stock
+	// aktifkan / nonaktifkan saham sesuai request
 	for code, isEnabled := range toggles {
 		data.ToggleStock(code, isEnabled)
 	}
 
-	// get latest stock config
+	// ambil semua kode saham
 	configs := data.GetStockConfig()
 
-	// filter to get only the enabled stock
+	// filter hanya yang aktif
 	subscribed := []string{}
 	for code, isEnabled := range configs {
 		if isEnabled {
@@ -72,10 +72,10 @@ func (s *stockService) ToggleStocks(stream pb.StockService_ToggleStocksServer) e
 }
 
 func (s *stockService) ListSubscriptions(_ *emptypb.Empty, stream pb.StockService_ListSubscriptionsServer) error {
-	// get latest stock config
+	// ambil semua kode saham
 	configs := data.GetStockConfig()
 
-	// filter to find only the enabled stock
+	// filter hanya yang aktif
 	for code, isEnabled := range configs {
 		if isEnabled {
 			stream.Send(&pb.StockCode{
@@ -88,7 +88,7 @@ func (s *stockService) ListSubscriptions(_ *emptypb.Empty, stream pb.StockServic
 }
 
 func (s *stockService) LiveStock(stream pb.StockService_LiveStockServer) error {
-	// trigger to continously receive request to toggle stock
+	// panggil di goroutine untuk memproses request selama koneksi masih terbuka
 	go func(stream pb.StockService_LiveStockServer) {
 		for {
 			req, err := stream.Recv()
@@ -106,13 +106,13 @@ func (s *stockService) LiveStock(stream pb.StockService_LiveStockServer) error {
 		}
 	}(stream)
 
-	// trigger to continously send latest price of all enabled stocks
+	// loop untuk mengirimkan data harga saham setiap detik
 	for {
 		select {
 		case <-stream.Context().Done():
 			return nil
 		default:
-			// pause every second
+			// pause setiap detik untuk simulasi harga saham yang berubah
 			time.Sleep(1 * time.Second)
 
 			configs := data.GetStockConfig()

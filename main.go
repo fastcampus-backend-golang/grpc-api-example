@@ -20,7 +20,7 @@ func main() {
 	srv := grpc.NewServer()
 	pb.RegisterStockServiceServer(srv, &stockService{})
 
-	// added reflection for debugging
+	// reflection untuk debugging
 	reflection.Register(srv)
 
 	log.Printf("server listening at %v", lis.Addr())
