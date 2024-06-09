@@ -1,4 +1,4 @@
-module github.com/madeindra/stock-grpc
+module github.com/fastcampus-backend-golang/grpc-api-example
 
 go 1.22.2
 

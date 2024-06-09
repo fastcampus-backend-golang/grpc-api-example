@@ -4,11 +4,11 @@ import (
 	"log"
 	"net"
 
-	_ "github.com/madeindra/stock-grpc/data"
+	_ "github.com/fastcampus-backend-golang/grpc-api-example/data"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	pb "github.com/madeindra/stock-grpc/proto"
+	pb "github.com/fastcampus-backend-golang/grpc-api-example/proto"
 )
 
 func main() {

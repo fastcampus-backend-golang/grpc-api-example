@@ -6,8 +6,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/madeindra/stock-grpc/data"
-	pb "github.com/madeindra/stock-grpc/proto"
+	"github.com/fastcampus-backend-golang/grpc-api-example/data"
+	pb "github.com/fastcampus-backend-golang/grpc-api-example/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
